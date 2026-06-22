@@ -65,7 +65,7 @@ OrchestratorAgent (Plan-and-Execute 6步流水线)
 | 工具 | 文件:行号 | 说明 |
 |------|-----------|------|
 | ZhipuClient (GLM-5.2) | `backend/app/tools/zhipu_client.py:17-90` | 文本生成唯一入口，think模式隔离reasoning_content(L73-84) |
-| CosyVoiceTTSClient | `backend/app/tools/boson_client.py:51-158` | 音频生成唯一入口，3次重试+兜底清洗(L26-48) |
+| CosyVoiceTTSClient | `backend/app/tools/boson_client.py:51-175` | 音频生成唯一入口，3次重试+SSML失败降级纯文本(L58-80)+兜底清洗(L26-48) |
 | WikiManager | `backend/app/tools/wiki_manager.py:15-145` | LLM Wiki 文件管理+FTS5全文搜索(带输入转义L107-123) |
 | AudioUtils | `backend/app/tools/audio_utils.py` | MP3拼接/时长获取/临时文件清理 |
 
@@ -144,7 +144,7 @@ Orchestrator 将"生成播客"拆解为6步，中英音频生成通过 `asyncio.
 文案Agent生成对谈稿时直接嵌入 `<speak>`/`<break>` 标签控制韵律停顿，音频Agent解析后传给TTS，实现"文案即指令"。
 - 生成：`backend/app/agents/script_writer_agent.py:126-152`
 - 解析：`backend/app/agents/audio_producer_agent.py:136-210`
-- 动态启用：`backend/app/tools/boson_client.py:102-103`
+- 动态启用：`backend/app/tools/boson_client.py:58-80`（SSML失败自动降级纯文本）
 
 ### 6. AI 供应商严格分区
 

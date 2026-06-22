@@ -89,7 +89,7 @@ audio_zh_result, audio_en_result = await asyncio.gather(
 **AI 供应商严格分区**（体现工具调用策略设计）：
 - `backend/app/config.py:9-18`：CosyVoice 只用于音频生成，智谱 GLM-5.2 用于其余全部 AI 功能
 - `backend/app/agents/audio_producer_agent.py` — AudioProducerAgent 不调用任何 LLM，纯工具调用（解析+TTS+拼接）
-- `backend/app/tools/boson_client.py:102-103`：根据文本内容动态决定是否启用 SSML：`if "<speak>" in text: kwargs["enable_ssml"] = True`
+- `backend/app/tools/boson_client.py:58-80`：根据文本内容动态决定是否启用 SSML，SSML 失败自动降级为纯文本重试
 
 ---
 
@@ -429,8 +429,8 @@ version_separator = re.compile(
 **回答要点**：
 - `BaseAgent.execute_with_logging()` 内置指数退避重试（`base_agent.py:84-128`）
 - Orchestrator 每步 try-catch，失败不阻塞已完成步骤
-- CosyVoice TTS 客户端内置 3 次重试 + 限流退避（`boson_client.py:85-136`）
-- 超长文本自动切分避免 TTS 413 错误（`audio_producer_agent.py:212-240`，MAX_TEXT_LEN=250）
+- CosyVoice TTS 客户端内置 3 次重试 + 限流退避 + SSML 失败降级纯文本（`boson_client.py:58-80`）
+- 超长文本自动切分避免 TTS 413 错误（`audio_producer_agent.py:55-75`，切分前剥离 `<speak>` 标签，切分后重新包裹，MAX_TEXT_LEN=200）
 - TTS 文本兜底清洗移除非标准标签（`boson_client.py:26-48`）
 - 失败记录到 `agent_logs` 表的 `status=failed` 和 `error` 字段
 - 客户端可查看失败日志，提交反馈触发优化

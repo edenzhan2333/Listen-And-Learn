@@ -52,15 +52,26 @@ class AudioProducerAgent(BaseAgent):
             segment_dir = podcast_dir / f"segments_{lang}"
             segment_dir.mkdir(parents=True, exist_ok=True)
 
-            MAX_TEXT_LEN = 250  # CosyVoice 单次请求文本上限（SSML 标签也占字符，留余量）
+            MAX_TEXT_LEN = 200  # CosyVoice 单次请求文本上限（SSML 标签也占字符，留余量）
             audio_segments = []
             failed_segments = []
             for i, seg in enumerate(segments):
                 voice = self.VOICE_MAP.get(seg["speaker"], settings.FEMALE_VOICE)
                 text = seg["text"]
 
-                # 超长文本切分
-                sub_texts = self._split_long_text(text, MAX_TEXT_LEN)
+                # 剥离外层 <speak></speak> 标签后再切分，切分后每段重新包裹
+                # 避免切分破坏 SSML 标签结构导致 413 错误
+                has_speak_wrap = text.strip().startswith("<speak>") and text.strip().endswith("</speak>")
+                if has_speak_wrap:
+                    inner_text = text.strip()[7:-8].strip()
+                else:
+                    inner_text = text
+
+                sub_texts = self._split_long_text(inner_text, MAX_TEXT_LEN)
+
+                # 重新包裹 <speak></speak>
+                if has_speak_wrap:
+                    sub_texts = [f"<speak>{t}</speak>" for t in sub_texts]
                 sub_paths = []
                 success = True
 

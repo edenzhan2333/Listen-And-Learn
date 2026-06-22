@@ -77,8 +77,30 @@ class CosyVoiceTTSClient:
         # 兜底清洗：移除非标准 SSML 标签，防止 "SSML text is illegal"
         text = _sanitize_tts_text(text)
 
+        # 先尝试带 SSML 标签合成
+        try:
+            return self._synthesize_with_retry(text, voice, save_path, instruction, use_ssml=True)
+        except Exception as ssml_error:
+            # SSML 模式全部失败 → 降级为纯文本模式（移除所有标签）
+            if "<speak>" in text or "<break" in text:
+                logger.warning(f"SSML TTS failed, falling back to plain text: {ssml_error}")
+                plain_text = _VALID_SSML_TAGS.sub('', text)  # 移除所有SSML标签
+                plain_text = re.sub(r'<[^>]+>', '', plain_text).strip()
+                if plain_text:
+                    return self._synthesize_with_retry(plain_text, voice, save_path, instruction, use_ssml=False)
+            raise
+
+    def _synthesize_with_retry(
+        self,
+        text: str,
+        voice: str,
+        save_path: Optional[Path],
+        instruction: str,
+        use_ssml: bool = True,
+    ) -> bytes:
+        """内部方法：带重试的 TTS 合成"""
         logger.info(f"CosyVoice TTS: voice={voice}, text_len={len(text)}, "
-                     f"text_preview={text[:80]}...")
+                     f"ssml={use_ssml}, text_preview={text[:80]}...")
 
         last_error = None
 
@@ -99,7 +121,7 @@ class CosyVoiceTTSClient:
                 if instruction:
                     kwargs["instruction"] = instruction
 
-                if "<speak>" in text or "<break" in text:
+                if use_ssml and ("<speak>" in text or "<break" in text):
                     kwargs["enable_ssml"] = True
 
                 result = HttpSpeechSynthesizer.call(**kwargs)
@@ -128,12 +150,12 @@ class CosyVoiceTTSClient:
             except Exception as e:
                 last_error = str(e)
                 logger.warning(
-                    f"CosyVoice TTS error, attempt {attempt}/{MAX_RETRIES}: {e}"
+                    f"CosyVoice TTS error, attempt {attempt}/{MAX_RETRIES} (ssml={use_ssml}): {e}"
                 )
                 if attempt < MAX_RETRIES:
                     time.sleep(RETRY_DELAY * attempt)
 
-        raise Exception(f"CosyVoice TTS failed after {MAX_RETRIES} attempts. Last error: {last_error}")
+        raise Exception(f"CosyVoice TTS failed after {MAX_RETRIES} attempts (ssml={use_ssml}). Last error: {last_error}")
 
     def _download_audio(self, url: str) -> bytes:
         """下载音频 URL"""
