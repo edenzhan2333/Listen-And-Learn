@@ -1,0 +1,25 @@
+{
+  "executionEnvironments": [
+    {
+      "root": "backend",
+      "pythonVersion": "3.11"
+    }
+  ],
+  "extraPaths": ["backend"],
+  "pythonVersion": "3.11",
+  "typeCheckingMode": "off",
+  "reportImplicitRelativeImport": "none",
+  "reportMissingTypeArgument": "none",
+  "reportUnknownParameterType": "none",
+  "reportUnknownVariableType": "none",
+  "reportUnknownMemberType": "none",
+  "reportUnknownArgumentType": "none",
+  "reportUnknownLambdaType": "none",
+  "reportMissingParameterType": "none",
+  "reportUnannotatedClassAttribute": "none",
+  "reportImplicitOverride": "none",
+  "reportUnusedCallResult": "none",
+  "reportUnusedImport": "none",
+  "reportDeprecated": "none",
+  "reportArgumentType": "none"
+}

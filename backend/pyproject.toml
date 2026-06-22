@@ -1,0 +1,43 @@
+[project]
+name = "listenandlearn-backend"
+version = "1.0.0"
+description = "Listen and Learn AI 播客 + 知识库后端"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi==0.115.6",
+    "uvicorn[standard]==0.34.0",
+    "httpx==0.28.1",
+    "requests==2.32.3",
+    "pydantic==2.10.4",
+    "pydantic-settings==2.7.1",
+    "python-multipart==0.0.20",
+    "markdown==3.7",
+    "beautifulsoup4==4.12.3",
+    "lxml==5.3.0",
+    "Pillow==11.1.0",
+    "pydub==0.25.1",
+    "APScheduler==3.11.0",
+    "zai-sdk==0.2.3",
+    "PyYAML==6.0.2",
+]
+
+[tool.pyright]
+extraPaths = ["."]
+pythonVersion = "3.11"
+reportImplicitRelativeImport = "none"
+reportMissingTypeArgument = "none"
+reportUnknownParameterType = "none"
+reportUnknownVariableType = "none"
+reportUnknownMemberType = "none"
+reportUnknownArgumentType = "none"
+reportUnknownLambdaType = "none"
+reportMissingParameterType = "none"
+reportUnannotatedClassAttribute = "none"
+reportImplicitOverride = "none"
+reportUnusedCallResult = "none"
+reportUnusedImport = "none"
+reportDeprecated = "none"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"

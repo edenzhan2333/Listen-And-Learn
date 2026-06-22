@@ -1,0 +1,32 @@
+# Build artifacts
+/build
+/app/build
+**/.gradle/
+/local.properties
+*.apk
+
+# Python
+__pycache__/
+*.pyc
+venv/
+*.egg-info/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data (运行时生成)
+backend/data/
+
+# Secrets
+.env
+*.jks
+*.keystore
+
+# CodeBuddy
+.codebuddy/
