@@ -104,24 +104,61 @@ class KBSearchAgent(BaseAgent):
             return {"answer": f"搜索失败: {e}", "sources": [], "log_id": None}
 
     def _generate_search_keywords(self, query: str) -> list[str]:
-        """用 GLM 生成搜索关键词"""
-        prompt = f"""用户想搜索知识库，查询内容是："{query}"
+        """用 GLM 生成搜索关键词
+        
+        think 模式开启后思考过程会占用 token，max_tokens 必须足够大。
+        同时对空响应做兜底：拆分查询中的实体词。
+        """
+        prompt = f"""用户想搜索AI领域知识库，查询内容是："{query}"
 
-请生成3个适合全文搜索的关键词（中英文均可），用于在AI领域知识库中查找相关内容。
-关键词应该简洁、具体，能够匹配到相关知识库页面。
+请生成3个简短的全文搜索关键词（中英文均可），用于在知识库中匹配相关页面。
+要求：
+- 每个关键词2-6个字，是具体的实体名或术语（如"智谱"、"GLM"、"OpenAI"）
+- 不要输出整句话作为关键词
+- 第一个关键词必须是查询中的核心实体
 
-只输出3个关键词，用换行分隔，不要其他内容。"""
+直接输出3个关键词，每行一个，不要编号，不要解释，不要思考过程。"""
 
         try:
-            response = self.zhipu.chat(prompt, temperature=0.3, max_tokens=200)
+            response = self.zhipu.chat(prompt, temperature=0.3, max_tokens=2048)
             keywords = [k.strip() for k in response.strip().split('\n') if k.strip()][:3]
-            # 始终包含原始查询
+            
+            # 过滤掉过长的"关键词"（超过15字的不是关键词，是句子）
+            keywords = [k for k in keywords if len(k) <= 15]
+            
+            if not keywords:
+                # GLM 返回空（think 模式思考过长未输出）→ 本地拆分兜底
+                logger.warning(f"GLM returned empty keywords, using local fallback for: {query}")
+                keywords = self._extract_keywords_locally(query)
+            
+            # 始终包含原始查询的核心词
             if query not in keywords:
                 keywords.insert(0, query)
             return keywords[:4]
         except Exception as e:
             logger.warning(f"Keyword generation failed: {e}")
             return [query]
+
+    @staticmethod
+    def _extract_keywords_locally(query: str) -> list[str]:
+        """本地关键词提取兜底：从查询中提取2-4字的中文词或英文单词"""
+        # 提取英文单词（2字符以上）
+        en_words = re.findall(r'[A-Za-z]{2,}', query)
+        # 提取中文词组（2-6字连续中文）
+        zh_words = re.findall(r'[\u4e00-\u9fff]{2,6}', query)
+        keywords = []
+        # 优先中文词（取前2个），再英文词（取前2个）
+        keywords.extend(zh_words[:2])
+        keywords.extend(en_words[:2])
+        # 去重
+        seen = set()
+        result = []
+        for k in keywords:
+            if k not in seen and k.lower() not in seen:
+                seen.add(k)
+                seen.add(k.lower())
+                result.append(k)
+        return result[:3] if result else [query]
 
     def _generate_answer(self, query: str, pages: list[dict]) -> str:
         """用 GLM 综合页面内容生成回答"""
@@ -149,8 +186,15 @@ class KBSearchAgent(BaseAgent):
                 prompt,
                 system_prompt="你是AI领域知识库助手，擅长综合多源信息回答问题。",
                 temperature=0.5,
-                max_tokens=2048
+                max_tokens=4096
             )
+            if not response or not response.strip():
+                # think 模式思考过长导致 content 为空 → 返回来源摘要
+                logger.warning("Answer generation returned empty, returning source summary")
+                sources_summary = "\n\n".join(
+                    f"【{p['title']}】\n{p['content'][:300]}..." for p in pages
+                )
+                return f"无法生成综合回答，以下是与"{query}"相关的知识库内容：\n\n{sources_summary}"
             return response.strip()
         except Exception as e:
             logger.error(f"Answer generation failed: {e}")

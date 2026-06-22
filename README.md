@@ -56,7 +56,7 @@ OrchestratorAgent (Plan-and-Execute 6步流水线)
 | **KnowledgeBaseAgent** | LLM Wiki 理念，摄入新闻→实体页/摘要页/概览页 | `backend/app/agents/knowledge_base_agent.py:30-270` |
 | **ScriptWriterAgent** | 中文生成→英文翻译→专有名词核对，SSML标签嵌入 | `backend/app/agents/script_writer_agent.py:28-307` |
 | **AudioProducerAgent** | 解析文案分段→超长切分→TTS合成→音频拼接 | `backend/app/agents/audio_producer_agent.py:33-241` |
-| **KBSearchAgent** | 自然语言搜索：GLM生成关键词→FTS5搜索→读取→综合回答 | `backend/app/agents/kb_search_agent.py:26-158` |
+| **KBSearchAgent** | 自然语言搜索：GLM生成关键词→FTS5搜索→读取→综合回答，空响应本地兜底 | `backend/app/agents/kb_search_agent.py:26-200` |
 | **FeedbackOptimizerAgent** | 分析反馈根因→生成优化建议→应用prompt迭代 | `backend/app/agents/feedback_optimizer_agent.py:24-176` |
 | **EvaluationAgent** | 汇总各Agent日志→GLM逐条打分→生成整体优化建议 | `backend/app/agents/evaluation_agent.py:26-111` |
 

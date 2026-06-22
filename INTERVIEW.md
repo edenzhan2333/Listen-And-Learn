@@ -82,7 +82,7 @@ audio_zh_result, audio_en_result = await asyncio.gather(
 | KnowledgeBaseAgent | `wiki.write_page` / `wiki.update_index` / `wiki.append_log` / `_extract_entities`(GLM) | `knowledge_base_agent.py:67-270` |
 | ScriptWriterAgent | `zhipu.chat`(中文生成) / `zhipu.chat`(翻译) / `zhipu.chat`(核对) | `script_writer_agent.py:120-223` |
 | AudioProducerAgent | `_parse_script` / `tts_client.synthesize_segment` / `concat_audio_mp3` | `audio_producer_agent.py:33-241` |
-| KBSearchAgent | `_generate_search_keywords`(GLM) / `wiki.search` / `wiki.read_page` / `_generate_answer`(GLM) | `kb_search_agent.py:26-158` |
+| KBSearchAgent | `_generate_search_keywords`(GLM+本地兜底) / `wiki.search` / `wiki.read_page` / `_generate_answer`(GLM) | `kb_search_agent.py:26-200` |
 | FeedbackOptimizerAgent | `_analyze_feedback`(GLM) / `_generate_optimization`(GLM) / `_apply_optimization` | `feedback_optimizer_agent.py:24-176` |
 | EvaluationAgent | `evaluator.evaluate_log`(GLM打分) / `_summarize_evaluation` | `evaluation_agent.py:26-111` |
 
@@ -219,8 +219,8 @@ async def run(self, query, **kwargs):
     answer = self._generate_answer(query, page_contents)  # L126-157
 ```
 
-- L106-124 `_generate_search_keywords()`：GLM 将用户问题转化为 3 个搜索关键词
-- L126-157 `_generate_answer()`：GLM 综合多个页面内容生成回答，要求标注来源
+- L106-161 `_generate_search_keywords()`：GLM 将用户问题转化为 3 个搜索关键词，空响应时本地拆分兜底（提取2-6字中文词/英文单词）
+- L163-201 `_generate_answer()`：GLM 综合多个页面内容生成回答，空响应时返回来源摘要
 
 ---
 
@@ -315,7 +315,7 @@ version_separator = re.compile(
 
 **ReAct 范式体现**：
 - `backend/app/agents/news_collector_agent.py:91-353` — NewsCollectorAgent 的 Reason-Act 循环：抓取列表→阅读正文→总结选优
-- `backend/app/agents/kb_search_agent.py:26-158` — KBSearchAgent：理解意图→搜索→读取→综合回答
+- `backend/app/agents/kb_search_agent.py:26-200` — KBSearchAgent：理解意图→搜索→读取→综合回答，空响应本地兜底
 
 **Plan-and-Execute 范式体现**：
 - `backend/app/agents/orchestrator_agent.py:25-154` — Orchestrator 先规划 6 步任务，再逐步执行
