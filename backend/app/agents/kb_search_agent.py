@@ -194,7 +194,7 @@ class KBSearchAgent(BaseAgent):
                 sources_summary = "\n\n".join(
                     f"【{p['title']}】\n{p['content'][:300]}..." for p in pages
                 )
-                return f"无法生成综合回答，以下是与"{query}"相关的知识库内容：\n\n{sources_summary}"
+                return f"无法生成综合回答，以下是与【{query}】相关的知识库内容：\n\n{sources_summary}"
             return response.strip()
         except Exception as e:
             logger.error(f"Answer generation failed: {e}")
